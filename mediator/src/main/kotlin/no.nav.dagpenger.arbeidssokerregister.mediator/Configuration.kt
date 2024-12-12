@@ -10,7 +10,6 @@ import com.natpryce.konfig.ConfigurationProperties
 import com.natpryce.konfig.EnvironmentVariables
 import com.natpryce.konfig.overriding
 
-
 internal object Configuration {
     const val APP_NAME = "dp-arbeidssokerregister-adapter"
     private val defaultProperties =
@@ -30,7 +29,6 @@ internal object Configuration {
         properties.list().reversed().fold(emptyMap()) { map, pair ->
             map + pair.second
         }
-
 
     val defaultObjectMapper: ObjectMapper =
         ObjectMapper()

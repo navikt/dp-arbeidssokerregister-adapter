@@ -8,8 +8,8 @@ import io.ktor.server.cio.CIO as CIOEngine
 internal class ApplicationBuilder(
     configuration: Map<String, String>,
 ) : RapidsConnection.StatusListener {
-
-    private val rapidsConnection = RapidApplication.create(
+    private val rapidsConnection =
+        RapidApplication.create(
             env = configuration,
             builder = { this.withKtor(embeddedServer(CIOEngine, port = 8080, module = {})) },
         ) { engine, _ ->
@@ -25,5 +25,4 @@ internal class ApplicationBuilder(
     internal fun start() {
         rapidsConnection.start()
     }
-
 }
