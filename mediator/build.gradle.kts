@@ -15,10 +15,21 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.rapids.and.rivers)
+    implementation(libs.konfig)
+    implementation(libs.kotlin.logging)
+
+
     implementation(libs.bundles.ktor.server)
     implementation(libs.bundles.ktor.client)
     implementation("io.ktor:ktor-server-netty:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-server-config-yaml:${libs.versions.ktor.get()}")
+
+    testImplementation(libs.bundles.kotest.assertions)
+    testImplementation(libs.mockk)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.rapids.and.rivers.test)
+
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

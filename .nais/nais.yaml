@@ -26,3 +26,5 @@ spec:
       memory: 256Mi
   secureLogs:
     enabled: true
+  kafka:
+    pool: { { kafka.pool } }
