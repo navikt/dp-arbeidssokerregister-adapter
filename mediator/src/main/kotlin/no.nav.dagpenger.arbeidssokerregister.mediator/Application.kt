@@ -1,5 +1,7 @@
 package no.nav.dagpenger.arbeidssokerregister.mediator
 
 fun main() {
-    println("Hei, hallo!")
+    while (true) {
+        println("Hei, hallo!")
+    }
 }
