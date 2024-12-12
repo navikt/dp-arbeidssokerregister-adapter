@@ -1,5 +1,8 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id("application")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     kotlin("jvm")
 }
 
@@ -25,5 +28,9 @@ kotlin {
 }
 
 application {
-    mainClass.set("no.nav.dagpenger.arebidssokerregister.mediator.ApplicationKt")
+    mainClass.set("no.nav.dagpenger.arbeidssokerregister.mediator.ApplicationKt")
+}
+
+tasks.withType<ShadowJar> {
+    mergeServiceFiles()
 }
