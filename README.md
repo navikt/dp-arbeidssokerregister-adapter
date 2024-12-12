@@ -1,4 +1,4 @@
-# Dagpenger-SERVICENAME
+# dp-arbeidssokerregister-adapter
 
 ## Komme i gang
 

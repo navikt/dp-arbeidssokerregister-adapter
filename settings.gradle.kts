@@ -1,4 +1,4 @@
-rootProject.name = "dp-SERVICENAME"
+rootProject.name = "dp-arbeidssokerregister-adapter"
 dependencyResolutionManagement {
     repositories {
         maven("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
@@ -9,3 +9,4 @@ dependencyResolutionManagement {
         }
     }
 }
+include("mediator")
