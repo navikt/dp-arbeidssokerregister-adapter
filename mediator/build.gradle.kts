@@ -24,6 +24,8 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-server-config-yaml:${libs.versions.ktor.get()}")
 
+    implementation("no.nav.dagpenger:oauth2-klient:2024.10.31-15.02.1d4f08a38d24")
+
     testImplementation(libs.bundles.kotest.assertions)
     testImplementation(libs.mockk)
     testImplementation(libs.ktor.client.mock)

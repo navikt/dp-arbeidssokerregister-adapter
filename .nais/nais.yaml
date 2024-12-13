@@ -28,3 +28,8 @@ spec:
     enabled: true
   kafka:
     pool: {{ kafka.pool }}
+  env:
+    - name: ARBEIDSSOKERREGISTER_HOST
+      value: {{ ARBEIDSSOKERREGISTER_HOST }}
+    - name: ARBEIDSSOKERREGISTER_SCOPE
+      value: {{ ARBEIDSSOKERREGISTER_SCOPE }}
