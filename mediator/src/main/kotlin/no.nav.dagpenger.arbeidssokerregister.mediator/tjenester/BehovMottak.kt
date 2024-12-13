@@ -23,8 +23,9 @@ class BehovMottak(
             .apply {
                 precondition {
                     it.requireValue("@event_name", "behov_arbeissokerstatus")
-                    it.requireAllOrAny("@behov", BehovType.entries.map { it.toString() })
+                    it.requireAllOrAny("@behov", BehovType.entries.map { behov -> behov.toString() })
                     it.requireKey("ident")
+                    it.interestedIn("periodeId", "arbeidssøkerNestePeriode", "arbeidet")
                     it.forbid("@løsning")
                 }
             }.register(this)
@@ -72,7 +73,7 @@ data class OvertaBekreftelseBehov(
 data class BekreftelseBehov(
     val ident: String,
     val periodeId: String,
-    val bekreftet: Boolean,
+    val arbeidssøkerNestePeriode: Boolean,
     val arbeidet: Boolean,
     val innkommendePacket: JsonMessage,
 )
@@ -90,7 +91,7 @@ fun JsonMessage.tilBekreftelseBehov() =
     BekreftelseBehov(
         ident = this["ident"].asText(),
         periodeId = this["periodeId"].asText(),
-        bekreftet = this["bekreftet"].asBoolean(),
+        arbeidssøkerNestePeriode = this["arbeidssøkerNestePeriode"].asBoolean(),
         arbeidet = this["arbeidet"].asBoolean(),
         innkommendePacket = this,
     )
