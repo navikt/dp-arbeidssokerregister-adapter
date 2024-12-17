@@ -11,4 +11,9 @@ class KafkaFactory(
         val kafkaConsumer = ConsumerProducerFactory(kafkaConfig).createConsumer(APP_NAME)
         return KafkaKonsument(kafkaConsumer, topic)
     }
+
+    fun <T> createProducer(topic: String): KafkaProdusent<T> {
+        val kafkaProducer = ConsumerProducerFactory(kafkaConfig).createProducer()
+        return KafkaProdusentImpl(kafkaProducer, topic)
+    }
 }
