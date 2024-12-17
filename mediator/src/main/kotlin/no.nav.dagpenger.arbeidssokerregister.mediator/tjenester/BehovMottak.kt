@@ -59,24 +59,30 @@ class BehovMottak(
     }
 }
 
-data class ArbeidssøkerstatusBehov(
-    val ident: String,
-    val innkommendePacket: JsonMessage,
+sealed class Behovmelding(
+    open val ident: String,
+    open val innkommendePacket: JsonMessage,
+    val behovType: BehovType,
 )
+
+data class ArbeidssøkerstatusBehov(
+    override val ident: String,
+    override val innkommendePacket: JsonMessage,
+) : Behovmelding(ident, innkommendePacket, Arbeidssøkerstatus)
 
 data class OvertaBekreftelseBehov(
-    val ident: String,
+    override val ident: String,
     val periodeId: String,
-    val innkommendePacket: JsonMessage,
-)
+    override val innkommendePacket: JsonMessage,
+) : Behovmelding(ident, innkommendePacket, OvertaBekreftelse)
 
 data class BekreftelseBehov(
-    val ident: String,
+    override val ident: String,
     val periodeId: String,
     val arbeidssøkerNestePeriode: Boolean,
     val arbeidet: Boolean,
-    val innkommendePacket: JsonMessage,
-)
+    override val innkommendePacket: JsonMessage,
+) : Behovmelding(ident, innkommendePacket, Bekreftelse)
 
 fun JsonMessage.tilArbeidssøkerstatusBehov() = ArbeidssøkerstatusBehov(ident = this["ident"].asText(), innkommendePacket = this)
 
