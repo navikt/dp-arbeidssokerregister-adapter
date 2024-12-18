@@ -3,6 +3,7 @@ package no.nav.dagpenger.arbeidssokerregister.mediator.tjenester
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.River
 import com.github.navikt.tbd_libs.rapids_and_rivers.River.PacketListener
+import com.github.navikt.tbd_libs.rapids_and_rivers.asLocalDateTime
 import com.github.navikt.tbd_libs.rapids_and_rivers.withMDC
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageContext
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.MessageMetadata
@@ -13,6 +14,7 @@ import no.nav.dagpenger.arbeidssokerregister.mediator.BehovløserMediator
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovType.Arbeidssøkerstatus
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovType.Bekreftelse
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovType.OvertaBekreftelse
+import java.time.LocalDateTime
 
 class BehovMottak(
     val rapidsConnection: RapidsConnection,
@@ -25,7 +27,7 @@ class BehovMottak(
                     it.requireValue("@event_name", "behov_arbeissokerstatus")
                     it.requireAllOrAny("@behov", BehovType.entries.map { behov -> behov.toString() })
                     it.requireKey("ident")
-                    it.interestedIn("periodeId", "arbeidssøkerNestePeriode", "arbeidet")
+                    it.interestedIn("periodeId", "arbeidssøkerNestePeriode", "arbeidet", "meldeperiode")
                     it.forbid("@løsning")
                 }
             }.register(this)
@@ -79,10 +81,16 @@ data class OvertaBekreftelseBehov(
 data class BekreftelseBehov(
     override val ident: String,
     val periodeId: String,
+    val meldeperiode: Meldeperiode,
     val arbeidssøkerNestePeriode: Boolean,
     val arbeidet: Boolean,
     override val innkommendePacket: JsonMessage,
-) : Behovmelding(ident, innkommendePacket, Bekreftelse)
+) : Behovmelding(ident, innkommendePacket, Bekreftelse) {
+    data class Meldeperiode(
+        val fraOgMed: LocalDateTime,
+        val tilOgMed: LocalDateTime,
+    )
+}
 
 fun JsonMessage.tilArbeidssøkerstatusBehov() = ArbeidssøkerstatusBehov(ident = this["ident"].asText(), innkommendePacket = this)
 
@@ -97,6 +105,11 @@ fun JsonMessage.tilBekreftelseBehov() =
     BekreftelseBehov(
         ident = this["ident"].asText(),
         periodeId = this["periodeId"].asText(),
+        meldeperiode =
+            BekreftelseBehov.Meldeperiode(
+                fraOgMed = this["meldeperiode"]["fraOgMed"].asLocalDateTime(),
+                tilOgMed = this["meldeperiode"]["tilOgMed"].asLocalDateTime(),
+            ),
         arbeidssøkerNestePeriode = this["arbeidssøkerNestePeriode"].asBoolean(),
         arbeidet = this["arbeidet"].asBoolean(),
         innkommendePacket = this,

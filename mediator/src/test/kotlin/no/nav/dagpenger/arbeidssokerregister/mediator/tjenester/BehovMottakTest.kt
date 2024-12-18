@@ -5,6 +5,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import no.nav.dagpenger.arbeidssokerregister.mediator.BehovløserMediator
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.UUID
 
 class BehovMottakTest {
@@ -57,6 +58,10 @@ class BehovMottakTest {
               "@behov": ["Bekreftelse"],
               "ident": "12345678910",
               "periodeId": "${UUID.randomUUID()}",
+              "meldeperiode": {
+                "fraOgMed": "${LocalDateTime.now().minusDays(13)}",
+                "tilOgMed": "${LocalDateTime.now()}"
+              },
               "arbeidssøkerNestePeriode": "true",
               "arbeidet": "false"
             }

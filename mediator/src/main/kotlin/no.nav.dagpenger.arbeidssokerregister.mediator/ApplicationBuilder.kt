@@ -18,9 +18,13 @@ internal class ApplicationBuilder(
 
     // Kafka
     private val overtaBekreftelseTopic = "paw.bekreftelse-paavegneav-v1" // TODO: Endre til riktig topic
-    private val kafkaProdusent =
+    private val bekreftelseTopic = "paw.bekreftelse-v1" // TODO: Endre til riktig topic
+    private val overtaBekreftelseKafkaProdusent =
         KafkaFactory(AivenConfig.default)
             .createProducer<OvertaArbeidssøkerBekreftelseMelding>(topic = overtaBekreftelseTopic)
+    private val bekreftelseKafkaProdusent =
+        KafkaFactory(AivenConfig.default)
+            .createProducer<BekreftelseMelding>(topic = bekreftelseTopic)
 
     private val rapidsConnection =
         RapidApplication.create(
@@ -30,7 +34,8 @@ internal class ApplicationBuilder(
             with(engine.application) {
                 internalApi()
             }
-            val behovløserMediator = BehovløserMediator(rapids, kafkaProdusent, arbeidssøkerConnector)
+            val behovløserMediator =
+                BehovløserMediator(rapids, overtaBekreftelseKafkaProdusent, bekreftelseKafkaProdusent, arbeidssøkerConnector)
             BehovMottak(rapidsConnection = rapids, behovløserMediator = behovløserMediator)
         }
 
