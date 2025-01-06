@@ -1,2 +1,6 @@
 kafka:
   pool: nav-dev
+
+ARBEIDSSOKERPERIODER_TOPIC: paw.arbeidssokerperioder-v1
+OVERTA_BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-paavegneav-beta-v1
+BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-beta-v3

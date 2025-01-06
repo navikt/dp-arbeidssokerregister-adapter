@@ -13,8 +13,9 @@ import java.time.ZoneId
 
 class ArbeidssøkerregisterMottak(
     private val arbeidssokerRegisterMediator: ArbeidssokerregisterMediator,
+    private val configuration: Map<String, String>,
 ) : KafkaKonsumentListener {
-    override val topic: String = "paw.arbeidssokerperioder-v1"
+    override val topic: String = configuration.getValue("ARBEIDSSOKERPERIODER_TOPIC")
 
     override fun onMessage(record: ConsumerRecord<String, String>) {
         logger.info { "Mottok melding om endring i arbeidssøkerperiode: ${record.value()}" }

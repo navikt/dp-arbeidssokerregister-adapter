@@ -17,8 +17,8 @@ internal class ApplicationBuilder(
     private val arbeidssøkerConnector = ArbeidssøkerConnector()
 
     // Kafka
-    private val overtaBekreftelseTopic = "paw.bekreftelse-paavegneav-v1" // TODO: Endre til riktig topic
-    private val bekreftelseTopic = "paw.bekreftelse-v1" // TODO: Endre til riktig topic
+    private val overtaBekreftelseTopic = configuration.getValue("OVERTA_BEKREFTELSE_TOPIC")
+    private val bekreftelseTopic = configuration.getValue("BEKREFTELSE_TOPIC")
     private val overtaBekreftelseKafkaProdusent =
         KafkaFactory(AivenConfig.default)
             .createProducer<OvertaArbeidssøkerBekreftelseMelding>(topic = overtaBekreftelseTopic)
@@ -42,7 +42,7 @@ internal class ApplicationBuilder(
     private val arbeidssøkerperiodeConsumer =
         KafkaRunner(
             kafkaConsumerFactory = KafkaFactory(AivenConfig.default),
-            listener = ArbeidssøkerregisterMottak(ArbeidssokerregisterMediator(rapidsConnection)),
+            listener = ArbeidssøkerregisterMottak(ArbeidssokerregisterMediator(rapidsConnection), configuration),
         )
 
     init {

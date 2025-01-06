@@ -30,7 +30,7 @@ class BehovløserMediator(
 
     fun behandle(behov: OvertaBekreftelseBehov) {
         sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
-        // TODO: Måtte vi hente partisjonsnøkkel her?
+        // TODO: Måtte vi hente partisjonsnøkkel her? RecordKey
         overtaBekreftelseKafkaProdusent.send(key = behov.periodeId, value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId))
         sikkerlogg.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret" }
         publiserLøsning(behov, "OK")

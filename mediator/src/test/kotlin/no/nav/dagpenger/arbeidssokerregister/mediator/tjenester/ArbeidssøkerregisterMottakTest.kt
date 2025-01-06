@@ -35,7 +35,14 @@ class ArbeidssøkerregisterMottakTest {
                 topic = topic,
                 pollTimeoutInSeconds = Duration.ofSeconds(1),
             ).apply {
-                register(ArbeidssøkerregisterMottak(arbeidssøkerregisterMediator))
+                register(
+                    ArbeidssøkerregisterMottak(
+                        arbeidssøkerregisterMediator,
+                        mapOf(
+                            "ARBEIDSSOKERPERIODER_TOPIC" to topic,
+                        ),
+                    ),
+                )
             }
     }
 
