@@ -59,6 +59,15 @@ internal object Configuration {
             }
         }
     }
+    val recordKeyTokenProvider: () -> String by lazy {
+        {
+            runBlocking {
+                azureAdClient
+                    .clientCredentials(properties[Key("ARBEIDSSOKERREGISTER_RECORD_KEY_SCOPE", stringType)])
+                    .accessToken ?: throw RuntimeException("Failed to get token")
+            }
+        }
+    }
 
     val defaultObjectMapper: ObjectMapper =
         ObjectMapper()

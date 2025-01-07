@@ -26,6 +26,9 @@ spec:
       memory: 256Mi
   secureLogs:
     enabled: true
+  azure:
+    application:
+      enabled: true
   kafka:
     pool: {{ kafka.pool }}
   accessPolicy:

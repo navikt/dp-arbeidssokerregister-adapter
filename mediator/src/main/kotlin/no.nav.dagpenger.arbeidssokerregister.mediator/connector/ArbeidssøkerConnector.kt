@@ -19,8 +19,9 @@ import java.net.URI
 
 class ArbeidssøkerConnector(
     private val arbeidssøkerregisterOppslagUrl: String = Configuration.arbeidssokerregisterOppslagUrl,
+    private val oppslagTokenProvider: () -> String? = Configuration.oppslagTokenProvider,
     private val arbeidssokerregisterRecordKeyUrl: String = Configuration.arbeidssokerregisterRecordKeyUrl,
-    private val tokenProvider: () -> String? = Configuration.oppslagTokenProvider,
+    private val recordKeyTokenProvider: () -> String? = Configuration.recordKeyTokenProvider,
     private val httpClient: HttpClient = createHttpClient(),
 ) {
     suspend fun hentSisteArbeidssøkerperiode(ident: String): List<ArbeidssøkerperiodeResponse> =
@@ -28,7 +29,7 @@ class ArbeidssøkerConnector(
             val result =
                 httpClient
                     .post(URI("$arbeidssøkerregisterOppslagUrl/api/v1/veileder/arbeidssoekerperioder").toURL()) {
-                        bearerAuth(hentToken())
+                        bearerAuth(oppslagTokenProvider.invoke() ?: throw RuntimeException("Klarte ikke å hente token"))
                         contentType(ContentType.Application.Json)
                         parameter("siste", true)
                         setBody(defaultObjectMapper.writeValueAsString(ArbeidssøkerperiodeRequestBody(ident)))
@@ -55,7 +56,7 @@ class ArbeidssøkerConnector(
             val result =
                 httpClient
                     .post(URI("$arbeidssokerregisterRecordKeyUrl/api/v1/record-key").toURL()) {
-                        bearerAuth(hentToken()) // TODO: Mulig denne ikke trengs
+                        bearerAuth(recordKeyTokenProvider.invoke() ?: throw RuntimeException("Klarte ikke å hente token"))
                         contentType(ContentType.Application.Json)
                         setBody(defaultObjectMapper.writeValueAsString(RecordKeyRequestBody(ident)))
                     }.also {
@@ -75,8 +76,6 @@ class ArbeidssøkerConnector(
             }
             result.body()
         }
-
-    private fun hentToken(): String = tokenProvider.invoke() ?: throw RuntimeException("Klarte ikke å hente token")
 
     companion object {
         private val logger = KotlinLogging.logger {}

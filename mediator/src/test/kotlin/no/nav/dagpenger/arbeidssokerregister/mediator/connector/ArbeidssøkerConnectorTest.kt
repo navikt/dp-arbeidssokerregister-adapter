@@ -20,6 +20,7 @@ class ArbeidssøkerConnectorTest {
         statusCode: Int,
     ) = ArbeidssøkerConnector(
         arbeidssøkerregisterOppslagUrl,
+        testTokenProvider,
         arbeidssokerregisterRecordKeyUrl,
         testTokenProvider,
         createMockClient(statusCode, responseBody),
