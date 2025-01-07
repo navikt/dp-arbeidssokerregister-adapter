@@ -30,16 +30,32 @@ class BehovløserMediator(
 
     fun behandle(behov: OvertaBekreftelseBehov) {
         sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
-        // TODO: Måtte vi hente partisjonsnøkkel her? RecordKey
-        overtaBekreftelseKafkaProdusent.send(key = behov.periodeId, value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId))
+        try {
+            val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
+            overtaBekreftelseKafkaProdusent.send(
+                key = recordKeyResponse.key.toString(),
+                value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId),
+            )
+        } catch (e: Exception) {
+            sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
+            publiserFeil(behov, e)
+            return
+        }
         sikkerlogg.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret" }
         publiserLøsning(behov, "OK")
     }
 
     fun behandle(behov: BekreftelseBehov) {
         sikkerlogg.info { "Behandler bekreftelsesbehov $behov" }
-        // TODO: Skal key være periodeId eller partisjonsnøkkel?
-        bekreftelseKafkaProdusent.send(key = behov.periodeId, value = behov.tilBekreftelsesMelding())
+        try {
+            val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
+            bekreftelseKafkaProdusent.send(key = recordKeyResponse.key.toString(), value = behov.tilBekreftelsesMelding())
+        } catch (e: Exception) {
+            sikkerlogg.error(e) { "Kunne ikke sende bekreftelse for ident ${behov.ident}" }
+            publiserFeil(behov, e)
+            return
+        }
+
         sikkerlogg.info { "Sendt bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret." }
         publiserLøsning(behov, "OK")
     }
@@ -48,12 +64,12 @@ class BehovløserMediator(
         behovmelding: Behovmelding,
         svarPåBehov: Any?,
     ) {
-        leggLøsningPåBehovsmeling(behovmelding, svarPåBehov)
+        leggLøsningPåBehovsmelding(behovmelding, svarPåBehov)
         rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
         sikkerlogg.info { "Løste behov ${behovmelding.behovType} med løsning: $svarPåBehov" }
     }
 
-    private fun leggLøsningPåBehovsmeling(
+    private fun leggLøsningPåBehovsmelding(
         behovmelding: Behovmelding,
         svarPåBehov: Any?,
     ) {
@@ -62,6 +78,28 @@ class BehovløserMediator(
                 behovmelding.behovType.toString() to
                     mapOf(
                         "verdi" to svarPåBehov,
+                    ),
+            )
+    }
+
+    private fun publiserFeil(
+        behovmelding: Behovmelding,
+        e: Exception,
+    ) {
+        sikkerlogg.error(e) { "Feil ved behandling av behov ${behovmelding.behovType}" }
+        leggFeilPåBehovsmelding(behovmelding, e.message)
+        rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
+    }
+
+    private fun leggFeilPåBehovsmelding(
+        behovmelding: Behovmelding,
+        feilmelding: String?,
+    ) {
+        behovmelding.innkommendePacket["@feil"] =
+            mapOf(
+                behovmelding.behovType.toString() to
+                    mapOf(
+                        "verdi" to feilmelding,
                     ),
             )
     }

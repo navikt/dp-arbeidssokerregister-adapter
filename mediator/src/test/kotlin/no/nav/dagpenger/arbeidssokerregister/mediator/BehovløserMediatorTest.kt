@@ -10,6 +10,7 @@ import no.nav.dagpenger.arbeidssokerregister.mediator.connector.ArbeidssøkerCon
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.ArbeidssøkerperiodeResponse
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.BrukerResponse
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.MetadataResponse
+import no.nav.dagpenger.arbeidssokerregister.mediator.connector.RecordKeyResponse
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.ArbeidssøkerstatusBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovType.Arbeidssøkerstatus
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovType.Bekreftelse
@@ -97,6 +98,8 @@ class BehovløserMediatorTest {
 
     @Test
     fun `skal overta bekreftelse av arbeidssøkerstatus for en periode`() {
+        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(1234)
+
         val periodeId = "9876543210"
         val overtaBekreftelseBehov =
             OvertaBekreftelseBehov(
@@ -117,7 +120,8 @@ class BehovløserMediatorTest {
         val meldinger = overtaBekreftelseKafkaProdusent.meldinger
 
         meldinger.size shouldBe 1
-        with(meldinger.first()) {
+        meldinger.entries.first().key shouldBe "1234"
+        with(meldinger.entries.first().value) {
             this.periodeId shouldBe periodeId
             bekreftelsesLøsning shouldBe DAGPENGER
             start.intervalMS shouldBe dagerTilMillisekunder(14)
@@ -134,7 +138,42 @@ class BehovløserMediatorTest {
     }
 
     @Test
+    fun `melder feil hvis recordKey ikke kan hentes ved overtakelse av bekrefelse`() {
+        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } throws RuntimeException("Feil ved henting av recordKey")
+
+        val periodeId = "9876543210"
+        val overtaBekreftelseBehov =
+            OvertaBekreftelseBehov(
+                ident = ident,
+                periodeId = periodeId,
+                innkommendePacket =
+                    JsonMessage.newMessage(
+                        eventName = "behov_arbeissokerstatus",
+                        mapOf(
+                            "@behov" to listOf(OvertaBekreftelse.name),
+                            "ident" to ident,
+                            "periodeId" to periodeId,
+                        ),
+                    ),
+            )
+        behovløserMediator.behandle(overtaBekreftelseBehov)
+
+        val meldinger = overtaBekreftelseKafkaProdusent.meldinger
+        meldinger.size shouldBe 0
+
+        with(rapidsConnection.inspektør) {
+            size shouldBe 1
+            message(0)["@event_name"].asText() shouldBe "behov_arbeissokerstatus"
+            message(0)["@behov"][0].asText() shouldBe OvertaBekreftelse.name
+            message(0)["ident"].asText() shouldBe ident
+            message(0)["@feil"]["OvertaBekreftelse"]["verdi"].asText() shouldBe "Feil ved henting av recordKey"
+        }
+    }
+
+    @Test
     fun `kan bekrefte periode på vegne av bruker`() {
+        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(1234)
+
         val periodeId = "9876543210"
         val nå = LocalDateTime.now()
 
@@ -142,7 +181,8 @@ class BehovløserMediatorTest {
 
         val meldinger = bekreftelseKafkaProdusent.meldinger
         meldinger.size shouldBe 1
-        with(meldinger.first()) {
+        meldinger.entries.first().key shouldBe "1234"
+        with(meldinger.entries.first().value) {
             this.periodeId shouldBe periodeId
             bekreftelsesLøsning shouldBe DAGPENGER
             svar.gjelderFra shouldBe nå.minusDays(13).tilMillis()
@@ -157,6 +197,27 @@ class BehovløserMediatorTest {
             message(0)["@behov"][0].asText() shouldBe Bekreftelse.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@løsning"]["Bekreftelse"]["verdi"].asText() shouldBe "OK"
+        }
+    }
+
+    @Test
+    fun `melder feil hvis recordKey ikke kan hentes ved bekrefelse`() {
+        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } throws RuntimeException("Feil ved henting av recordKey")
+
+        val periodeId = "9876543210"
+        val nå = LocalDateTime.now()
+
+        behovløserMediator.behandle(bekreftelseBehov(periodeId, nå))
+
+        val meldinger = bekreftelseKafkaProdusent.meldinger
+        meldinger.size shouldBe 0
+
+        with(rapidsConnection.inspektør) {
+            size shouldBe 1
+            message(0)["@event_name"].asText() shouldBe "behov_arbeissokerstatus"
+            message(0)["@behov"][0].asText() shouldBe Bekreftelse.name
+            message(0)["ident"].asText() shouldBe ident
+            message(0)["@feil"]["Bekreftelse"]["verdi"].asText() shouldBe "Feil ved henting av recordKey"
         }
     }
 }

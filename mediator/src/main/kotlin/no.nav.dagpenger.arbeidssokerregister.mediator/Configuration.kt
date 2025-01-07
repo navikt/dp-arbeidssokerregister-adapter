@@ -35,10 +35,12 @@ internal object Configuration {
             map + pair.second
         }
 
-    val arbeidssoekerregisterUrl by lazy {
-        properties[Key("ARBEIDSSOKERREGISTER_HOST", stringType)].let {
-            "https://$it"
-        }
+    val arbeidssokerregisterOppslagUrl by lazy {
+        properties[Key("ARBEIDSSOKERREGISTER_OPPSLAG_HOST", stringType)].formatUrl()
+    }
+
+    val arbeidssokerregisterRecordKeyUrl by lazy {
+        properties[Key("ARBEIDSSOKERREGISTER_RECORD_KEY_HOST", stringType)].formatUrl()
     }
 
     private val azureAdConfig by lazy { OAuth2Config.AzureAd(properties) }
@@ -48,11 +50,11 @@ internal object Configuration {
             authType = azureAdConfig.clientSecret(),
         )
     }
-    val tokenProvider: () -> String by lazy {
+    val oppslagTokenProvider: () -> String by lazy {
         {
             runBlocking {
                 azureAdClient
-                    .clientCredentials(properties[Key("ARBEIDSSOKERREGISTER_SCOPE", stringType)])
+                    .clientCredentials(properties[Key("ARBEIDSSOKERREGISTER_OPPSLAG_SCOPE", stringType)])
                     .accessToken ?: throw RuntimeException("Failed to get token")
             }
         }
@@ -64,4 +66,6 @@ internal object Configuration {
             .registerModule(JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+
+    private fun String.formatUrl(): String = if (this.startsWith("http")) this else "https://$this"
 }

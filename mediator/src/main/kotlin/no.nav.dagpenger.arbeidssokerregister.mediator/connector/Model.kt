@@ -7,6 +7,14 @@ data class ArbeidssøkerperiodeRequestBody(
     val identitetsnummer: String,
 )
 
+data class RecordKeyRequestBody(
+    val ident: String,
+)
+
+data class RecordKeyResponse(
+    val key: Int,
+)
+
 data class ArbeidssøkerperiodeResponse(
     val periodeId: UUID,
     val startet: MetadataResponse,

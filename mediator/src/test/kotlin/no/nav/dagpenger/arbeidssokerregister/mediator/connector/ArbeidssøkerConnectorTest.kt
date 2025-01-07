@@ -8,22 +8,25 @@ import no.nav.dagpenger.arbeidssokerregister.mediator.Configuration.defaultObjec
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import java.util.UUID
+import kotlin.random.Random
 
 class ArbeidssøkerConnectorTest {
-    private val arbeidssøkerregisterUrl = "http://arbeidssøkerregister"
+    private val arbeidssøkerregisterOppslagUrl = "http://arbeidssøkerregister-oppslag"
+    private val arbeidssokerregisterRecordKeyUrl = "http://arbeidssøkerregister-record-key"
     private val testTokenProvider: () -> String = { "testToken" }
 
     private fun arbeidssøkerConnector(
         responseBody: String,
         statusCode: Int,
     ) = ArbeidssøkerConnector(
-        arbeidssøkerregisterUrl,
+        arbeidssøkerregisterOppslagUrl,
+        arbeidssokerregisterRecordKeyUrl,
         testTokenProvider,
         createMockClient(statusCode, responseBody),
     )
 
     @Test
-    fun `Kan mappe fult objekt`() {
+    fun `Oppslag - Kan mappe fult objekt`() {
         val periodeId = UUID.randomUUID()
         val response =
             runBlocking {
@@ -38,7 +41,7 @@ class ArbeidssøkerConnectorTest {
     }
 
     @Test
-    fun `Kan mappe objekt uten avsluttet`() {
+    fun `Oppslag - Kan mappe objekt uten avsluttet`() {
         val periodeId = UUID.randomUUID()
         val response =
             runBlocking {
@@ -56,7 +59,7 @@ class ArbeidssøkerConnectorTest {
     }
 
     @Test
-    fun `Kan håndtere tom liste`() {
+    fun `Oppslag - Kan håndtere tom liste`() {
         val response =
             runBlocking {
                 arbeidssøkerConnector(
@@ -69,7 +72,7 @@ class ArbeidssøkerConnectorTest {
     }
 
     @Test
-    fun `Kaster exception hvis response status ikke er 200`() {
+    fun `Oppslag - Kaster exception hvis response status ikke er 200`() {
         shouldThrow<RuntimeException> {
             runBlocking {
                 arbeidssøkerConnector(
@@ -79,7 +82,37 @@ class ArbeidssøkerConnectorTest {
             }
         }
     }
+
+    @Test
+    fun `Record key - Kan mappe fult objekt`() {
+        val response =
+            runBlocking {
+                arbeidssøkerConnector(recordKeyResponse(), 200).hentRecordKey("12345678901")
+            }
+
+        response shouldNotBe null
+    }
+
+    @Test
+    fun `Record key - Kaster exception hvis response status ikke er 200`() {
+        shouldThrow<RuntimeException> {
+            runBlocking {
+                arbeidssøkerConnector(
+                    """{feilkode: "400", melding: "Bad request error"}""",
+                    400,
+                ).hentRecordKey("12345678901")
+            }
+        }
+    }
 }
+
+fun recordKeyResponse() =
+    defaultObjectMapper
+        .writeValueAsString(
+            RecordKeyResponse(
+                key = Random.nextInt(),
+            ),
+        )
 
 fun arbeidssøkerResponse(
     periodeId: UUID,

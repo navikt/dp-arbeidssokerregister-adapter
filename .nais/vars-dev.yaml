@@ -1,6 +1,9 @@
 kafka:
   pool: nav-dev
 
+ARBEIDSSOKERREGISTER_OPPSLAG_HOST: oppslag-arbeidssoekerregisteret.intern.dev.nav.no
+ARBEIDSSOKERREGISTER_OPPSLAG_SCOPE: api://dev-gcp.paw.paw-arbeidssoekerregisteret-api-oppslag/.default
+ARBEIDSSOKERREGISTER_RECORD_KEY_HOST: record-key-arbeidssoekerregisteret.intern.dev.nav.no
 ARBEIDSSOKERPERIODER_TOPIC: paw.arbeidssokerperioder-v1
 OVERTA_BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-paavegneav-beta-v1
 BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-beta-v3
