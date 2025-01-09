@@ -13,6 +13,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 import java.util.concurrent.TimeUnit.DAYS
+import no.nav.dagpenger.arbeidssokerregister.mediator.hendelser.ArbeidssøkerperiodeHendelse
 
 class BehovløserMediator(
     private val rapidsConnection: RapidsConnection,
@@ -22,10 +23,20 @@ class BehovløserMediator(
 ) {
     fun behandle(behov: ArbeidssøkerstatusBehov) {
         sikkerlogg.info { "Behandler arbeidssøkerbehov $behov" }
-        val arbeidssøkerperiodeResponse =
-            runBlocking { arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident) }.firstOrNull()
+        val arbeidssøkerperiode =
+            runBlocking {
+                arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident) }
+                .firstOrNull()
+                ?.let {
+                    ArbeidssøkerperiodeHendelse(
+                        ident = behov.ident,
+                        periodeId = it.periodeId,
+                        startDato = it.startet.tidspunkt,
+                        sluttDato = it.avsluttet?.tidspunkt
+                    )
+                }
 
-        publiserLøsning(behov, arbeidssøkerperiodeResponse)
+        publiserLøsning(behov, arbeidssøkerperiode)
     }
 
     fun behandle(behov: OvertaBekreftelseBehov) {
