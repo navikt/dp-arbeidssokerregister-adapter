@@ -61,11 +61,13 @@ class BehovløserMediatorTest {
 
         behovløserMediator.behandle(behov)
         with(rapidsConnection.inspektør) {
+            println(message(0))
             size shouldBe 1
             message(0)["@event_name"].asText() shouldBe "behov_arbeissokerstatus"
             message(0)["@behov"][0].asText() shouldBe Arbeidssøkerstatus.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@løsning"]["Arbeidssøkerstatus"]["verdi"]["periodeId"].asText() shouldBe periodeId.toString()
+            message(0)["@feil"]["Arbeidssøkerstatus"]["verdi"].isEmpty shouldBe true
         }
     }
 
@@ -93,6 +95,7 @@ class BehovløserMediatorTest {
             message(0)["@behov"][0].asText() shouldBe Arbeidssøkerstatus.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@løsning"]["Arbeidssøkerstatus"]["verdi"].isEmpty shouldBe true
+            message(0)["@feil"]["Arbeidssøkerstatus"]["verdi"].isEmpty shouldBe true
         }
     }
 
@@ -134,6 +137,7 @@ class BehovløserMediatorTest {
             message(0)["@behov"][0].asText() shouldBe OvertaBekreftelse.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@løsning"]["OvertaBekreftelse"]["verdi"].asText() shouldBe "OK"
+            message(0)["@feil"]["OvertaBekreftelse"]["verdi"].isEmpty shouldBe true
         }
     }
 
@@ -167,6 +171,7 @@ class BehovløserMediatorTest {
             message(0)["@behov"][0].asText() shouldBe OvertaBekreftelse.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@feil"]["OvertaBekreftelse"]["verdi"].asText() shouldBe "Feil ved henting av recordKey"
+            message(0)["@løsning"]["OvertaBekreftelse"]["verdi"].isEmpty shouldBe true
         }
     }
 
@@ -197,6 +202,7 @@ class BehovløserMediatorTest {
             message(0)["@behov"][0].asText() shouldBe Bekreftelse.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@løsning"]["Bekreftelse"]["verdi"].asText() shouldBe "OK"
+            message(0)["@feil"]["Bekreftelse"]["verdi"].isEmpty shouldBe true
         }
     }
 
@@ -218,6 +224,7 @@ class BehovløserMediatorTest {
             message(0)["@behov"][0].asText() shouldBe Bekreftelse.name
             message(0)["ident"].asText() shouldBe ident
             message(0)["@feil"]["Bekreftelse"]["verdi"].asText() shouldBe "Feil ved henting av recordKey"
+            message(0)["@løsning"]["Bekreftelse"]["verdi"].isEmpty shouldBe true
         }
     }
 }

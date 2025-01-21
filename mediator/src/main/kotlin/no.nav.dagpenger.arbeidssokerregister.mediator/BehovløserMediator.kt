@@ -4,6 +4,7 @@ import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.ArbeidssøkerConnector
+import no.nav.dagpenger.arbeidssokerregister.mediator.hendelser.ArbeidssøkerperiodeHendelse
 import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaProdusent
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.ArbeidssøkerstatusBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.Behovmelding
@@ -13,7 +14,6 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 import java.util.concurrent.TimeUnit.DAYS
-import no.nav.dagpenger.arbeidssokerregister.mediator.hendelser.ArbeidssøkerperiodeHendelse
 
 class BehovløserMediator(
     private val rapidsConnection: RapidsConnection,
@@ -25,14 +25,14 @@ class BehovløserMediator(
         sikkerlogg.info { "Behandler arbeidssøkerbehov $behov" }
         val arbeidssøkerperiode =
             runBlocking {
-                arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident) }
-                .firstOrNull()
+                arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident)
+            }.firstOrNull()
                 ?.let {
                     ArbeidssøkerperiodeHendelse(
                         ident = behov.ident,
                         periodeId = it.periodeId,
                         startDato = it.startet.tidspunkt,
-                        sluttDato = it.avsluttet?.tidspunkt
+                        sluttDato = it.avsluttet?.tidspunkt,
                     )
                 }
 
@@ -49,7 +49,7 @@ class BehovløserMediator(
             )
         } catch (e: Exception) {
             sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
-            publiserFeil(behov, e)
+            publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
             return
         }
         sikkerlogg.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret" }
@@ -63,7 +63,7 @@ class BehovløserMediator(
             bekreftelseKafkaProdusent.send(key = recordKeyResponse.key.toString(), value = behov.tilBekreftelsesMelding())
         } catch (e: Exception) {
             sikkerlogg.error(e) { "Kunne ikke sende bekreftelse for ident ${behov.ident}" }
-            publiserFeil(behov, e)
+            publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
             return
         }
 
@@ -74,8 +74,10 @@ class BehovløserMediator(
     private fun publiserLøsning(
         behovmelding: Behovmelding,
         svarPåBehov: Any?,
+        feil: Exception? = null,
     ) {
         leggLøsningPåBehovsmelding(behovmelding, svarPåBehov)
+        leggFeilPåBehovsmelding(behovmelding, feil)
         rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
         sikkerlogg.info { "Løste behov ${behovmelding.behovType} med løsning: $svarPåBehov" }
     }
@@ -93,24 +95,15 @@ class BehovløserMediator(
             )
     }
 
-    private fun publiserFeil(
-        behovmelding: Behovmelding,
-        e: Exception,
-    ) {
-        sikkerlogg.error(e) { "Feil ved behandling av behov ${behovmelding.behovType}" }
-        leggFeilPåBehovsmelding(behovmelding, e.message)
-        rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
-    }
-
     private fun leggFeilPåBehovsmelding(
         behovmelding: Behovmelding,
-        feilmelding: String?,
+        feilmelding: Exception?,
     ) {
         behovmelding.innkommendePacket["@feil"] =
             mapOf(
                 behovmelding.behovType.toString() to
                     mapOf(
-                        "verdi" to feilmelding,
+                        "verdi" to feilmelding?.message,
                     ),
             )
     }
