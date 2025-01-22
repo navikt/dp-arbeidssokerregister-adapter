@@ -35,6 +35,8 @@ spec:
     outbound:
       rules:
         - application: paw-arbeidssoekerregisteret-api-oppslag
+          namespace: paw
+          cluster: dev-gcp
         - application: paw-kafka-key-generator
   env:
     - name: ARBEIDSSOKERREGISTER_OPPSLAG_HOST
