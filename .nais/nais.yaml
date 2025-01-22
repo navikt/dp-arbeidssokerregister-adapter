@@ -38,6 +38,8 @@ spec:
           namespace: paw
           cluster: dev-gcp
         - application: paw-kafka-key-generator
+          namespace: paw
+          cluster: dev-gcp
   env:
     - name: ARBEIDSSOKERREGISTER_OPPSLAG_HOST
       value: {{ ARBEIDSSOKERREGISTER_OPPSLAG_HOST }}

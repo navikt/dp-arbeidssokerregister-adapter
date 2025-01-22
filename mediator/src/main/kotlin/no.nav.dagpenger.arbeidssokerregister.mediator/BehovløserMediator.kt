@@ -26,8 +26,8 @@ class BehovløserMediator(
         val arbeidssøkerperiode =
             runBlocking {
                 try {
-                    val test = arbeidssøkerConnector.test()
-                    sikkerlogg.info { "Testet arbeidssøkerregisteret: $test" }
+                    // val test = arbeidssøkerConnector.test()
+                    // sikkerlogg.info { "Testet arbeidssøkerregisteret: $test" }
                     arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident)
                 } catch (e: Exception) {
                     sikkerlogg.error(e) { "Kunne ikke hente siste arbeidssøkerperiode for ident ${behov.ident}" }
