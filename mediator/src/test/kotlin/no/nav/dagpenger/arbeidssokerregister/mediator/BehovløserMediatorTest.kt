@@ -45,6 +45,7 @@ class BehovløserMediatorTest {
     fun `kan løse ArbeidssøkerstatusBehov når bruker finnes i arbeidssøkerregisteret`() {
         val periodeId = UUID.randomUUID()
         coEvery { arbeidssøkerConnector.hentSisteArbeidssøkerperiode(any<String>()) } returns arbeidssøkerResponse(periodeId)
+        coEvery { arbeidssøkerConnector.test() } returns "OK"
 
         val behov =
             ArbeidssøkerstatusBehov(
