@@ -83,6 +83,7 @@ class BehovløserMediator(
     ) {
         leggLøsningPåBehovsmelding(behovmelding, svarPåBehov)
         leggFeilPåBehovsmelding(behovmelding, feil)
+        sikkerlogg.info { "Publiserer løsning: ${behovmelding.innkommendePacket.toJson()}" }
         rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
         sikkerlogg.info { "Svarte på behov ${behovmelding.behovType} med løsning: $svarPåBehov og feil $feil" }
     }

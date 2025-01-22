@@ -61,7 +61,6 @@ class BehovløserMediatorTest {
 
         behovløserMediator.behandle(behov)
         with(rapidsConnection.inspektør) {
-            println(message(0))
             size shouldBe 1
             message(0)["@event_name"].asText() shouldBe "behov_arbeissokerstatus"
             message(0)["@behov"][0].asText() shouldBe Arbeidssøkerstatus.name
