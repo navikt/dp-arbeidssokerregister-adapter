@@ -23,28 +23,25 @@ class BehovløserMediator(
 ) {
     fun behandle(behov: ArbeidssøkerstatusBehov) {
         sikkerlogg.info { "Behandler arbeidssøkerbehov $behov" }
-        val arbeidssøkerperiode =
-            runBlocking {
-                try {
-                    // val test = arbeidssøkerConnector.test()
-                    // sikkerlogg.info { "Testet arbeidssøkerregisteret: $test" }
+        try {
+            val arbeidssøkerperiode =
+                runBlocking {
                     arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident)
-                } catch (e: Exception) {
-                    sikkerlogg.error(e) { "Kunne ikke hente siste arbeidssøkerperiode for ident ${behov.ident}" }
-                    null
-                }
-            }?.firstOrNull()
-                ?.let {
-                    ArbeidssøkerperiodeHendelse(
-                        ident = behov.ident,
-                        periodeId = it.periodeId,
-                        startDato = it.startet.tidspunkt,
-                        sluttDato = it.avsluttet?.tidspunkt,
-                    )
-                }
-        sikkerlogg.info { "Fant $arbeidssøkerperiode." }
-
-        publiserLøsning(behov, arbeidssøkerperiode)
+                }.firstOrNull()
+                    ?.let {
+                        ArbeidssøkerperiodeHendelse(
+                            ident = behov.ident,
+                            periodeId = it.periodeId,
+                            startDato = it.startet.tidspunkt,
+                            sluttDato = it.avsluttet?.tidspunkt,
+                        )
+                    }
+            sikkerlogg.info { "Fant $arbeidssøkerperiode." }
+            publiserLøsning(behov, arbeidssøkerperiode)
+        } catch (e: Exception) {
+            sikkerlogg.error(e) { "Kunne ikke hente siste arbeidssøkerperiode for ident ${behov.ident}" }
+            publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
+        }
     }
 
     fun behandle(behov: OvertaBekreftelseBehov) {
@@ -87,7 +84,7 @@ class BehovløserMediator(
         leggLøsningPåBehovsmelding(behovmelding, svarPåBehov)
         leggFeilPåBehovsmelding(behovmelding, feil)
         rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
-        sikkerlogg.info { "Løste behov ${behovmelding.behovType} med løsning: $svarPåBehov og feil $feil" }
+        sikkerlogg.info { "Svarte på behov ${behovmelding.behovType} med løsning: $svarPåBehov og feil $feil" }
     }
 
     private fun leggLøsningPåBehovsmelding(

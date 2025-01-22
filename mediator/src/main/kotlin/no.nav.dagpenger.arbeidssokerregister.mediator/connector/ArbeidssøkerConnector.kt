@@ -25,14 +25,6 @@ class ArbeidssøkerConnector(
     private val recordKeyTokenProvider: () -> String? = Configuration.recordKeyTokenProvider,
     private val httpClient: HttpClient = createHttpClient(),
 ) {
-    suspend fun test(): String =
-        withContext(Dispatchers.IO) {
-            sikkerlogg.info { "Tester om arbeidssøkerregister er i live" }
-            val result = httpClient.get(URI("$arbeidssøkerregisterOppslagUrl/internal/isAlive").toURL())
-            sikkerlogg.info { "Kall til arbeidssøkerregister for å teste om tjenesten er i live ga status ${result.status}" }
-            result.body()
-        }
-
     suspend fun hentSisteArbeidssøkerperiode(ident: String): List<ArbeidssøkerperiodeResponse> =
         withContext(Dispatchers.IO) {
             val result =
