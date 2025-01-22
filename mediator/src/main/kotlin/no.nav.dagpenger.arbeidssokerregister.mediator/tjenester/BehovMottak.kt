@@ -24,7 +24,7 @@ class BehovMottak(
         River(rapidsConnection)
             .apply {
                 precondition {
-                    it.requireValue("@event_name", "behov_arbeissokerstatus")
+                    it.requireValue("@event_name", "behov_arbeidssokerstatus")
                     it.requireAllOrAny("@behov", BehovType.entries.map { behov -> behov.toString() })
                     it.requireKey("ident")
                     it.interestedIn("periodeId", "arbeidssøkerNestePeriode", "arbeidet", "meldeperiode")

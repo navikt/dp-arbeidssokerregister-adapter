@@ -21,7 +21,7 @@ class BehovMottakTest {
         val json = // language=JSON
             """
             {
-              "@event_name": "behov_arbeissokerstatus",
+              "@event_name": "behov_arbeidssokerstatus",
               "@behov": ["Arbeidssøkerstatus"],
               "ident": "12345678910"
             }
@@ -37,7 +37,7 @@ class BehovMottakTest {
         val json = // language=JSON
             """
             {
-              "@event_name": "behov_arbeissokerstatus",
+              "@event_name": "behov_arbeidssokerstatus",
               "@behov": ["OvertaBekreftelse"],
               "ident": "12345678910",
               "periodeId": "${UUID.randomUUID()}"
@@ -54,7 +54,7 @@ class BehovMottakTest {
         val json = // language=JSON
             """
             {
-              "@event_name": "behov_arbeissokerstatus",
+              "@event_name": "behov_arbeidssokerstatus",
               "@behov": ["Bekreftelse"],
               "ident": "12345678910",
               "periodeId": "${UUID.randomUUID()}",
