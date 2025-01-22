@@ -23,14 +23,14 @@ class BehovløserMediator(
 ) {
     fun behandle(behov: ArbeidssøkerstatusBehov) {
         sikkerlogg.info { "Behandler arbeidssøkerbehov $behov" }
-        logger.info { "Behandler arbeidssøkerbehov $behov" }
         val arbeidssøkerperiode =
             runBlocking {
                 try {
+                    val test = arbeidssøkerConnector.test()
+                    sikkerlogg.info { "Testet arbeidssøkerregisteret: $test" }
                     arbeidssøkerConnector.hentSisteArbeidssøkerperiode(behov.ident)
                 } catch (e: Exception) {
                     sikkerlogg.error(e) { "Kunne ikke hente siste arbeidssøkerperiode for ident ${behov.ident}" }
-                    logger.error(e) { "Kunne ikke hente arbeidssøkerperiode" }
                     null
                 }
             }?.firstOrNull()
@@ -42,14 +42,13 @@ class BehovløserMediator(
                         sluttDato = it.avsluttet?.tidspunkt,
                     )
                 }
-        logger.info { "Fant $arbeidssøkerperiode." }
+        sikkerlogg.info { "Fant $arbeidssøkerperiode." }
 
         publiserLøsning(behov, arbeidssøkerperiode)
     }
 
     fun behandle(behov: OvertaBekreftelseBehov) {
         sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
-        logger.info { "Behandler overtagelse av bekreftelse-behov $behov" }
         try {
             val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
             overtaBekreftelseKafkaProdusent.send(
@@ -58,12 +57,10 @@ class BehovløserMediator(
             )
         } catch (e: Exception) {
             sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
-            logger.info { "Kunne ikke overta bekreftelse" }
             publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
             return
         }
         sikkerlogg.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret" }
-        logger.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId}" }
         publiserLøsning(behov, "OK")
     }
 
@@ -91,7 +88,6 @@ class BehovløserMediator(
         leggFeilPåBehovsmelding(behovmelding, feil)
         rapidsConnection.publish(behovmelding.ident, behovmelding.innkommendePacket.toJson())
         sikkerlogg.info { "Løste behov ${behovmelding.behovType} med løsning: $svarPåBehov og feil $feil" }
-        logger.info { "Løste behov ${behovmelding.behovType} med løsning: $svarPåBehov og feil $feil" }
     }
 
     private fun leggLøsningPåBehovsmelding(
@@ -121,8 +117,7 @@ class BehovløserMediator(
     }
 
     companion object {
-        val logger = KotlinLogging.logger {}
-        val sikkerlogg = KotlinLogging.logger("tjenestekall.BehovløserMediator")
+        private val sikkerlogg = KotlinLogging.logger("tjenestekall.BehovløserMediator")
     }
 }
 

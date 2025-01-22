@@ -13,22 +13,22 @@ import java.time.ZoneId
 
 class ArbeidssøkerregisterMottak(
     private val arbeidssokerRegisterMediator: ArbeidssokerregisterMediator,
-    private val configuration: Map<String, String>,
+    configuration: Map<String, String>,
 ) : KafkaKonsumentListener {
     override val topic: String = configuration.getValue("ARBEIDSSOKERPERIODER_TOPIC")
 
     override fun onMessage(record: ConsumerRecord<String, String>) {
-        logger.info { "Mottok melding om endring i arbeidssøkerperiode: ${record.value()}" }
+        sikkerlogg.info { "Mottok melding om endring i arbeidssøkerperiode: ${record.value()}" }
         try {
             val hendelse = record.tilHendelse()
             arbeidssokerRegisterMediator.behandle(hendelse)
         } catch (e: Exception) {
-            logger.error(e) { "Feil ved behandling av arbeidssøkerperiode" }
+            sikkerlogg.error(e) { "Feil ved behandling av arbeidssøkerperiode" }
         }
     }
 
     companion object {
-        private val logger = KotlinLogging.logger {}
+        private val sikkerlogg = KotlinLogging.logger("tjenestekall.ArbeidssøkerregisterMottak")
     }
 }
 

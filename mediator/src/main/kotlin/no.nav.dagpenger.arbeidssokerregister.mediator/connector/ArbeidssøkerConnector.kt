@@ -3,6 +3,7 @@ package no.nav.dagpenger.arbeidssokerregister.mediator.connector
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -24,6 +25,14 @@ class ArbeidssøkerConnector(
     private val recordKeyTokenProvider: () -> String? = Configuration.recordKeyTokenProvider,
     private val httpClient: HttpClient = createHttpClient(),
 ) {
+    suspend fun test(): String =
+        withContext(Dispatchers.IO) {
+            sikkerlogg.info { "Tester om arbeidssøkerregister er i live" }
+            val result = httpClient.get(URI("$arbeidssøkerregisterOppslagUrl/internal/isAlive").toURL())
+            sikkerlogg.info { "Kall til arbeidssøkerregister for å teste om tjenesten er i live ga status ${result.status}" }
+            result.body()
+        }
+
     suspend fun hentSisteArbeidssøkerperiode(ident: String): List<ArbeidssøkerperiodeResponse> =
         withContext(Dispatchers.IO) {
             val result =
@@ -34,7 +43,6 @@ class ArbeidssøkerConnector(
                         parameter("siste", true)
                         setBody(defaultObjectMapper.writeValueAsString(ArbeidssøkerperiodeRequestBody(ident)))
                     }.also {
-                        logger.info { "Kall til arbeidssøkerregister for å hente arbeidssøkerperiode ga status ${it.status}" }
                         sikkerlogg.info {
                             "Kall til arbeidssøkerregister for å hente arbeidssøkerperiode for $ident ga status ${it.status}"
                         }
@@ -42,7 +50,6 @@ class ArbeidssøkerConnector(
 
             if (result.status != HttpStatusCode.OK) {
                 val body = result.bodyAsText()
-                logger.warn { "Uforventet status ${result.status.value} ved henting av arbeidssøkerperiode" }
                 sikkerlogg.warn {
                     "Uforventet status ${result.status.value} ved henting av arbeidssøkerperiode for $ident. Response: $body"
                 }
@@ -60,7 +67,6 @@ class ArbeidssøkerConnector(
                         contentType(ContentType.Application.Json)
                         setBody(defaultObjectMapper.writeValueAsString(RecordKeyRequestBody(ident)))
                     }.also {
-                        logger.info { "Kall til arbeidssøkerregister for å hente record key ga status ${it.status}" }
                         sikkerlogg.info {
                             "Kall til arbeidssøkerregister for å hente record key for $ident ga status ${it.status}"
                         }
@@ -68,7 +74,6 @@ class ArbeidssøkerConnector(
 
             if (result.status != HttpStatusCode.OK) {
                 val body = result.bodyAsText()
-                logger.warn { "Uforventet status ${result.status.value} ved henting av record key" }
                 sikkerlogg.warn {
                     "Uforventet status ${result.status.value} ved henting av record key for $ident. Response: $body"
                 }
@@ -78,7 +83,6 @@ class ArbeidssøkerConnector(
         }
 
     companion object {
-        private val logger = KotlinLogging.logger {}
-        val sikkerlogg = KotlinLogging.logger("tjenestekall.HentRapporteringperioder")
+        private val sikkerlogg = KotlinLogging.logger("tjenestekall.HentRapporteringperioder")
     }
 }

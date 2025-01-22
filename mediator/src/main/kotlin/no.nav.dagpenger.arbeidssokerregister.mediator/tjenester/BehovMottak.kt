@@ -43,7 +43,6 @@ class BehovMottak(
             mapOf("ident" to packet["ident"].asText()),
         ) {
             sikkerlogg.info { "Mottok behov: ${packet.toJson()}" }
-            logger.info { "Mottok behov: ${packet.toJson()}" }
             try {
                 val behov = BehovType.valueOf(packet.get("@behov")[0].asText())
                 when (behov) {
@@ -53,13 +52,11 @@ class BehovMottak(
                 }
             } catch (e: Exception) {
                 sikkerlogg.error(e) { "Mottak av behov feilet" }
-                logger.error(e) { "Mottak av behov feilet" }
             }
         }
     }
 
     private companion object {
-        val logger = KotlinLogging.logger {}
         private val sikkerlogg = KotlinLogging.logger("tjenestekall.BehovMottak")
     }
 }
