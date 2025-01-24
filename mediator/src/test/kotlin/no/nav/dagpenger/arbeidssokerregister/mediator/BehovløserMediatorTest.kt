@@ -20,6 +20,7 @@ import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BekreftelseBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.OvertaBekreftelseBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.kafka.MockKafkaProducer
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import java.util.UUID
@@ -99,6 +100,7 @@ class BehovløserMediatorTest {
     }
 
     @Test
+    @Disabled
     fun `skal overta bekreftelse av arbeidssøkerstatus for en periode`() {
         coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(1234)
 

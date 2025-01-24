@@ -48,10 +48,10 @@ class BehovløserMediator(
         sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
         try {
             val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
-            overtaBekreftelseKafkaProdusent.send(
+            /*overtaBekreftelseKafkaProdusent.send(
                 key = recordKeyResponse.key.toString(),
                 value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId),
-            )
+            )*/
         } catch (e: Exception) {
             sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
             publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
