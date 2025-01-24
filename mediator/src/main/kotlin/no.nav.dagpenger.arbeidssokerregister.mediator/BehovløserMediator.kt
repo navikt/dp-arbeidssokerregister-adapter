@@ -47,18 +47,18 @@ class BehovløserMediator(
     fun behandle(behov: OvertaBekreftelseBehov) {
         sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
         try {
-            val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
-            /*overtaBekreftelseKafkaProdusent.send(
+            /*val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
+            overtaBekreftelseKafkaProdusent.send(
                 key = recordKeyResponse.key.toString(),
                 value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId),
             )*/
         } catch (e: Exception) {
             sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
-            publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
+            // publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
             return
         }
         sikkerlogg.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret" }
-        publiserLøsning(behov, "OK")
+        // publiserLøsning(behov, "OK")
     }
 
     fun behandle(behov: BekreftelseBehov) {

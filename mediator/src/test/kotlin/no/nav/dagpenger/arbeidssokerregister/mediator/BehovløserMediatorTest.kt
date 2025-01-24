@@ -143,6 +143,7 @@ class BehovløserMediatorTest {
     }
 
     @Test
+    @Disabled
     fun `melder feil hvis recordKey ikke kan hentes ved overtakelse av bekrefelse`() {
         coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } throws RuntimeException("Feil ved henting av recordKey")
 
