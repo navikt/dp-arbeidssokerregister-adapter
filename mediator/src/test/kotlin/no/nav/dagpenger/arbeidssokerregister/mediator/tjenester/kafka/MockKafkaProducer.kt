@@ -4,12 +4,12 @@ import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaProdusent
 
 class MockKafkaProducer<T> : KafkaProdusent<T>() {
     private var isClosed = false
-    private val _meldinger = mutableMapOf<String, T>() // mutableListOf<Pair<String, T>>()
+    private val _meldinger = mutableMapOf<Long, T>()
 
-    val meldinger: Map<String, T> get() = _meldinger
+    val meldinger: Map<Long, T> get() = _meldinger
 
     override fun send(
-        key: String,
+        key: Long,
         value: T,
     ) {
         check(!isClosed) { "Cannot send message. Producer is closed." }

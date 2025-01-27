@@ -49,7 +49,7 @@ class BehovløserMediator(
         try {
             val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
             overtaBekreftelseKafkaProdusent.send(
-                key = recordKeyResponse.key.toString(),
+                key = recordKeyResponse.key,
                 value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId),
             )
         } catch (e: Exception) {
@@ -65,7 +65,7 @@ class BehovløserMediator(
         sikkerlogg.info { "Behandler bekreftelsesbehov $behov" }
         try {
             val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
-            bekreftelseKafkaProdusent.send(key = recordKeyResponse.key.toString(), value = behov.tilBekreftelsesMelding())
+            bekreftelseKafkaProdusent.send(key = recordKeyResponse.key, value = behov.tilBekreftelsesMelding())
         } catch (e: Exception) {
             sikkerlogg.error(e) { "Kunne ikke sende bekreftelse for ident ${behov.ident}" }
             publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)

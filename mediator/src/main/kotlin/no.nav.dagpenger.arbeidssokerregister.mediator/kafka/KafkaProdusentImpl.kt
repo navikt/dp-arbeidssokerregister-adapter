@@ -5,11 +5,11 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 
 class KafkaProdusentImpl<T>(
-    private val kafkaProducer: KafkaProducer<String, String>,
+    private val kafkaProducer: KafkaProducer<Long, String>,
     val topic: String,
 ) : KafkaProdusent<T>() {
     override fun send(
-        key: String,
+        key: Long,
         value: T,
     ) {
         val record = ProducerRecord(topic, key, serialize(value))

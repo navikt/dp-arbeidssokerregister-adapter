@@ -111,7 +111,7 @@ fun recordKeyResponse() =
     defaultObjectMapper
         .writeValueAsString(
             RecordKeyResponse(
-                key = Random.nextInt(),
+                key = Random.nextLong(),
             ),
         )
 

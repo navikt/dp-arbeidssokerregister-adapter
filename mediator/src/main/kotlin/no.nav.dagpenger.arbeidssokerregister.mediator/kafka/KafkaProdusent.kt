@@ -6,7 +6,7 @@ abstract class KafkaProdusent<T> {
     protected fun serialize(value: T): String = defaultObjectMapper.writeValueAsString(value)
 
     abstract fun send(
-        key: String,
+        key: Long,
         value: T,
     )
 

@@ -12,7 +12,7 @@ data class RecordKeyRequestBody(
 )
 
 data class RecordKeyResponse(
-    val key: Int,
+    val key: Long,
 )
 
 data class ArbeidssøkerperiodeResponse(

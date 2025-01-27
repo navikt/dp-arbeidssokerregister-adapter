@@ -100,7 +100,8 @@ class BehovløserMediatorTest {
 
     @Test
     fun `skal overta bekreftelse av arbeidssøkerstatus for en periode`() {
-        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(1234)
+        val nøkkel = 1234L
+        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(nøkkel)
 
         val periodeId = "9876543210"
         val overtaBekreftelseBehov =
@@ -122,7 +123,7 @@ class BehovløserMediatorTest {
         val meldinger = overtaBekreftelseKafkaProdusent.meldinger
 
         meldinger.size shouldBe 1
-        meldinger.entries.first().key shouldBe "1234"
+        meldinger.entries.first().key shouldBe nøkkel
         with(meldinger.entries.first().value) {
             this.periodeId shouldBe periodeId
             bekreftelsesLøsning shouldBe DAGPENGER
@@ -176,7 +177,8 @@ class BehovløserMediatorTest {
 
     @Test
     fun `kan bekrefte periode på vegne av bruker`() {
-        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(1234)
+        val nøkkel = 1234L
+        coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(nøkkel)
 
         val periodeId = "9876543210"
         val nå = LocalDateTime.now()
@@ -185,7 +187,7 @@ class BehovløserMediatorTest {
 
         val meldinger = bekreftelseKafkaProdusent.meldinger
         meldinger.size shouldBe 1
-        meldinger.entries.first().key shouldBe "1234"
+        meldinger.entries.first().key shouldBe nøkkel
         with(meldinger.entries.first().value) {
             this.periodeId shouldBe periodeId
             bekreftelsesLøsning shouldBe DAGPENGER
