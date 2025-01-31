@@ -15,6 +15,12 @@ class ArbeidssøkerConnectorTest {
     private val arbeidssokerregisterRecordKeyUrl = "http://arbeidssøkerregister-record-key"
     private val testTokenProvider: () -> String = { "testToken" }
 
+    init {
+        System.setProperty("KAFKA_SCHEMA_REGISTRY", "KAFKA_SCHEMA_REGISTRY")
+        System.setProperty("KAFKA_SCHEMA_REGISTRY_USER", "KAFKA_SCHEMA_REGISTRY_USER")
+        System.setProperty("KAFKA_SCHEMA_REGISTRY_PASSWORD", "KAFKA_SCHEMA_REGISTRY_PASSWORD")
+    }
+
     private fun arbeidssøkerConnector(
         responseBody: String,
         statusCode: Int,

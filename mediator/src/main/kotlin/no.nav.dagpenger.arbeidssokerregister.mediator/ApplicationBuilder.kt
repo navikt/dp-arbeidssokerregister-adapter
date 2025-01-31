@@ -3,12 +3,18 @@ package no.nav.dagpenger.arbeidssokerregister.mediator
 import com.github.navikt.tbd_libs.kafka.AivenConfig
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection.StatusListener
 import io.ktor.server.engine.embeddedServer
+import no.nav.dagpenger.arbeidssokerregister.mediator.Configuration.kafkaSchemaRegistryConfig
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.ArbeidssøkerConnector
 import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaFactory
 import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaRunner
+import no.nav.dagpenger.arbeidssokerregister.mediator.serializers.BekreftelseAvroSerializer
+import no.nav.dagpenger.arbeidssokerregister.mediator.serializers.PaaVegneAvAvroSerializer
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.ArbeidssøkerregisterMottak
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovMottak
 import no.nav.helse.rapids_rivers.RapidApplication
+import no.nav.paw.bekreftelse.melding.v1.Bekreftelse
+import no.nav.paw.bekreftelse.paavegneav.v1.PaaVegneAv
+import org.apache.kafka.common.serialization.LongSerializer
 import io.ktor.server.cio.CIO as CIOEngine
 
 internal class ApplicationBuilder(
@@ -19,12 +25,24 @@ internal class ApplicationBuilder(
     // Kafka
     private val overtaBekreftelseTopic = configuration.getValue("OVERTA_BEKREFTELSE_TOPIC")
     private val bekreftelseTopic = configuration.getValue("BEKREFTELSE_TOPIC")
+    private val kafkaFactory = KafkaFactory(AivenConfig.default, kafkaSchemaRegistryConfig)
     private val overtaBekreftelseKafkaProdusent =
-        KafkaFactory(AivenConfig.default)
-            .createProducer<OvertaArbeidssøkerBekreftelseMelding>(topic = overtaBekreftelseTopic)
+        kafkaFactory.createProducer<Long, PaaVegneAv>(
+            clientId = "teamdagpenger-arbeidssokerregister-producer",
+            keySerializer = LongSerializer::class,
+            valueSerializer = PaaVegneAvAvroSerializer::class,
+        )
+
+        /*KafkaFactory(AivenConfig.default, kafkaSchemaRegistryConfig)
+            .createProducer<OvertaArbeidssøkerBekreftelseMelding>(topic = overtaBekreftelseTopic)*/
     private val bekreftelseKafkaProdusent =
-        KafkaFactory(AivenConfig.default)
-            .createProducer<BekreftelseMelding>(topic = bekreftelseTopic)
+        kafkaFactory.createProducer<Long, Bekreftelse>(
+            clientId = "teamdagpenger-arbeidssokerregister-producer",
+            keySerializer = LongSerializer::class,
+            valueSerializer = BekreftelseAvroSerializer::class,
+        )
+        /*KafkaFactory(AivenConfig.default)
+            .createProducer<BekreftelseMelding>(topic = bekreftelseTopic)*/
 
     private val rapidsConnection =
         RapidApplication.create(
@@ -35,13 +53,20 @@ internal class ApplicationBuilder(
                 internalApi()
             }
             val behovløserMediator =
-                BehovløserMediator(rapids, overtaBekreftelseKafkaProdusent, bekreftelseKafkaProdusent, arbeidssøkerConnector)
+                BehovløserMediator(
+                    rapids,
+                    overtaBekreftelseKafkaProdusent,
+                    bekreftelseKafkaProdusent,
+                    arbeidssøkerConnector,
+                    overtaBekreftelseTopic,
+                    bekreftelseTopic,
+                )
             BehovMottak(rapidsConnection = rapids, behovløserMediator = behovløserMediator)
         }
 
     private val arbeidssøkerperiodeConsumer =
         KafkaRunner(
-            kafkaConsumerFactory = KafkaFactory(AivenConfig.default),
+            kafkaConsumerFactory = kafkaFactory,
             listener = ArbeidssøkerregisterMottak(ArbeidssokerregisterMediator(rapidsConnection), configuration),
         )
 

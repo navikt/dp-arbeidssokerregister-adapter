@@ -2,6 +2,7 @@ package no.nav.dagpenger.arbeidssokerregister.mediator
 
 import com.github.navikt.tbd_libs.rapids_and_rivers.JsonMessage
 import com.github.navikt.tbd_libs.rapids_and_rivers.test_support.TestRapid
+import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -18,27 +19,39 @@ import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BehovType.Overta
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BekreftelseBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BekreftelseBehov.Meldeperiode
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.OvertaBekreftelseBehov
-import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.kafka.MockKafkaProducer
+import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.kafka.MockKafkaProdusent
+import no.nav.paw.bekreftelse.melding.v1.vo.Bekreftelsesloesning
+import no.nav.paw.bekreftelse.paavegneav.v1.PaaVegneAv
+import no.nav.paw.bekreftelse.paavegneav.v1.vo.Start
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 private val ident = "12345678910"
 
 class BehovløserMediatorTest {
     private val rapidsConnection = TestRapid()
-    private val overtaBekreftelseKafkaProdusent = MockKafkaProducer<OvertaArbeidssøkerBekreftelseMelding>()
-    private val bekreftelseKafkaProdusent = MockKafkaProducer<BekreftelseMelding>()
+    private val overtaBekreftelseKafkaProdusent = MockKafkaProdusent<PaaVegneAv>()
+    private val bekreftelseKafkaProdusent = MockKafkaProdusent<no.nav.paw.bekreftelse.melding.v1.Bekreftelse>()
     private val arbeidssøkerConnector = mockk<ArbeidssøkerConnector>()
 
     private val behovløserMediator =
-        BehovløserMediator(rapidsConnection, overtaBekreftelseKafkaProdusent, bekreftelseKafkaProdusent, arbeidssøkerConnector)
+        BehovløserMediator(
+            rapidsConnection,
+            overtaBekreftelseKafkaProdusent,
+            bekreftelseKafkaProdusent,
+            arbeidssøkerConnector,
+            "overtakelseTopic",
+            "bekreftelseTopic",
+        )
 
     @BeforeEach
     fun reset() {
         rapidsConnection.reset()
-        overtaBekreftelseKafkaProdusent.reset()
+        overtaBekreftelseKafkaProdusent.flush()
     }
 
     @Test
@@ -103,11 +116,11 @@ class BehovløserMediatorTest {
         val nøkkel = 1234L
         coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(nøkkel)
 
-        val periodeId = "9876543210"
+        val periodeId = UUID.randomUUID()
         val overtaBekreftelseBehov =
             OvertaBekreftelseBehov(
                 ident = ident,
-                periodeId = periodeId,
+                periodeId = periodeId.toString(),
                 innkommendePacket =
                     JsonMessage.newMessage(
                         eventName = "behov_arbeissokerstatus",
@@ -123,12 +136,11 @@ class BehovløserMediatorTest {
         val meldinger = overtaBekreftelseKafkaProdusent.meldinger
 
         meldinger.size shouldBe 1
-        meldinger.entries.first().key shouldBe nøkkel
-        with(meldinger.entries.first().value) {
+        meldinger.first().key() shouldBe nøkkel
+        with(meldinger.first().value()) {
             this.periodeId shouldBe periodeId
-            bekreftelsesLøsning shouldBe DAGPENGER
-            start.intervalMS shouldBe dagerTilMillisekunder(14)
-            start.graceMS shouldBe dagerTilMillisekunder(8)
+            this.bekreftelsesloesning shouldBe no.nav.paw.bekreftelse.paavegneav.v1.vo.Bekreftelsesloesning.DAGPENGER
+            this.handling shouldBe Start(1209600000L, 691200000L)
         }
 
         with(rapidsConnection.inspektør) {
@@ -180,19 +192,19 @@ class BehovløserMediatorTest {
         val nøkkel = 1234L
         coEvery { arbeidssøkerConnector.hentRecordKey(any<String>()) } returns RecordKeyResponse(nøkkel)
 
-        val periodeId = "9876543210"
+        val periodeId = UUID.randomUUID().toString()
         val nå = LocalDateTime.now()
 
         behovløserMediator.behandle(bekreftelseBehov(periodeId, nå))
 
         val meldinger = bekreftelseKafkaProdusent.meldinger
         meldinger.size shouldBe 1
-        meldinger.entries.first().key shouldBe nøkkel
-        with(meldinger.entries.first().value) {
-            this.periodeId shouldBe periodeId
-            bekreftelsesLøsning shouldBe DAGPENGER
-            svar.gjelderFra shouldBe nå.minusDays(13).tilMillis()
-            svar.gjelderTil shouldBe nå.tilMillis()
+        meldinger.first().key() shouldBe nøkkel
+        with(meldinger.first().value()) {
+            this.periodeId shouldBe UUID.fromString(periodeId)
+            this.bekreftelsesloesning shouldBe Bekreftelsesloesning.DAGPENGER
+            sjekkTidspunkt(nå.minusDays(13).toInstant(ZoneOffset.UTC), svar.gjelderFra)
+            sjekkTidspunkt(nå.toInstant(ZoneOffset.UTC), svar.gjelderTil)
             svar.harJobbetIDennePerioden shouldBe false
             svar.vilFortsetteSomArbeidssoeker shouldBe true
         }
@@ -283,3 +295,11 @@ fun bekreftelseBehov(
 )
 
 fun dagerTilMillisekunder(dager: Long): Long = dager * 24 * 60 * 60 * 1000
+
+fun sjekkTidspunkt(
+    excpected: Instant,
+    actual: Instant,
+) {
+    val diff = actual.epochSecond - excpected.epochSecond
+    diff shouldBeInRange (0L..1L)
+}

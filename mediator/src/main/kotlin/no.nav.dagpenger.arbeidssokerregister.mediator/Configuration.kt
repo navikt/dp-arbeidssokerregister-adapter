@@ -1,8 +1,8 @@
 package no.nav.dagpenger.arbeidssokerregister.mediator
 
-import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.natpryce.konfig.ConfigurationMap
@@ -12,8 +12,9 @@ import com.natpryce.konfig.Key
 import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
 import kotlinx.coroutines.runBlocking
+import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaSchemaRegistryConfig
 import no.nav.dagpenger.oauth2.CachedOauth2Client
-import no.nav.dagpenger.oauth2.OAuth2Config
+import no.nav.dagpenger.oauth2.OAuth2Config.AzureAd
 
 internal object Configuration {
     const val APP_NAME = "dp-arbeidssokerregister-adapter"
@@ -43,7 +44,7 @@ internal object Configuration {
         properties[Key("ARBEIDSSOKERREGISTER_RECORD_KEY_HOST", stringType)].formatUrl()
     }
 
-    private val azureAdConfig by lazy { OAuth2Config.AzureAd(properties) }
+    private val azureAdConfig by lazy { AzureAd(properties) }
     private val azureAdClient by lazy {
         CachedOauth2Client(
             tokenEndpointUrl = azureAdConfig.tokenEndpointUrl,
@@ -69,12 +70,21 @@ internal object Configuration {
         }
     }
 
+    val kafkaSchemaRegistryConfig =
+        KafkaSchemaRegistryConfig(
+            url = properties[Key("KAFKA_SCHEMA_REGISTRY", stringType)],
+            username = properties[Key("KAFKA_SCHEMA_REGISTRY_USER", stringType)],
+            password = properties[Key("KAFKA_SCHEMA_REGISTRY_PASSWORD", stringType)],
+            autoRegisterSchema = true,
+            avroSpecificReaderConfig = true,
+        )
+
     val defaultObjectMapper: ObjectMapper =
         ObjectMapper()
             .registerKotlinModule()
             .registerModule(JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .disable(WRITE_DATES_AS_TIMESTAMPS)
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     private fun String.formatUrl(): String = if (this.startsWith("http")) this else "https://$this"
 }

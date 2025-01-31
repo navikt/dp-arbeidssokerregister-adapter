@@ -5,11 +5,23 @@ import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.ArbeidssøkerConnector
 import no.nav.dagpenger.arbeidssokerregister.mediator.hendelser.ArbeidssøkerperiodeHendelse
-import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaProdusent
+import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.sendDeferred
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.ArbeidssøkerstatusBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.Behovmelding
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.BekreftelseBehov
 import no.nav.dagpenger.arbeidssokerregister.mediator.tjenester.OvertaBekreftelseBehov
+import no.nav.paw.bekreftelse.melding.v1.Bekreftelse
+import no.nav.paw.bekreftelse.melding.v1.vo.Bekreftelsesloesning
+import no.nav.paw.bekreftelse.melding.v1.vo.Bruker
+import no.nav.paw.bekreftelse.melding.v1.vo.BrukerType.SYSTEM
+import no.nav.paw.bekreftelse.melding.v1.vo.Metadata
+import no.nav.paw.bekreftelse.melding.v1.vo.Svar
+import no.nav.paw.bekreftelse.paavegneav.v1.PaaVegneAv
+import no.nav.paw.bekreftelse.paavegneav.v1.vo.Bekreftelsesloesning.DAGPENGER
+import no.nav.paw.bekreftelse.paavegneav.v1.vo.Start
+import org.apache.kafka.clients.producer.Producer
+import org.apache.kafka.clients.producer.ProducerRecord
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
@@ -17,9 +29,11 @@ import java.util.concurrent.TimeUnit.DAYS
 
 class BehovløserMediator(
     private val rapidsConnection: RapidsConnection,
-    private val overtaBekreftelseKafkaProdusent: KafkaProdusent<OvertaArbeidssøkerBekreftelseMelding>,
-    private val bekreftelseKafkaProdusent: KafkaProdusent<BekreftelseMelding>,
+    private val overtaBekreftelseKafkaProdusent: Producer<Long, PaaVegneAv>,
+    private val bekreftelseKafkaProdusent: Producer<Long, Bekreftelse>,
     private val arbeidssøkerConnector: ArbeidssøkerConnector,
+    private val overtaBekreftelseTopic: String,
+    private val bekreftelseTopic: String,
 ) {
     fun behandle(behov: ArbeidssøkerstatusBehov) {
         sikkerlogg.info { "Behandler arbeidssøkerbehov $behov" }
@@ -44,37 +58,59 @@ class BehovløserMediator(
         }
     }
 
-    fun behandle(behov: OvertaBekreftelseBehov) {
-        sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
-        try {
-            val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
-            overtaBekreftelseKafkaProdusent.send(
-                key = recordKeyResponse.key,
-                value = OvertaArbeidssøkerBekreftelseMelding(behov.periodeId),
-            )
-        } catch (e: Exception) {
-            sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
-            publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
-            return
-        }
-        sikkerlogg.info { "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret" }
-        publiserLøsning(behov, "OK")
-    }
+    fun behandle(behov: OvertaBekreftelseBehov) =
+        runBlocking {
+            sikkerlogg.info { "Behandler overtagelse av bekreftelse-behov $behov" }
+            try {
+                val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
+                val record =
+                    ProducerRecord(
+                        overtaBekreftelseTopic,
+                        recordKeyResponse.key,
+                        OvertaArbeidssøkerBekreftelseMelding(UUID.fromString(behov.periodeId)).tilPaaVegneAv(),
+                    )
+                val metadata =
+                    overtaBekreftelseKafkaProdusent
+                        .sendDeferred(record)
+                        .await()
 
-    fun behandle(behov: BekreftelseBehov) {
-        sikkerlogg.info { "Behandler bekreftelsesbehov $behov" }
-        try {
-            val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
-            bekreftelseKafkaProdusent.send(key = recordKeyResponse.key, value = behov.tilBekreftelsesMelding())
-        } catch (e: Exception) {
-            sikkerlogg.error(e) { "Kunne ikke sende bekreftelse for ident ${behov.ident}" }
-            publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
-            return
+                sikkerlogg.info {
+                    "Sendt overtagelse av bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret. " +
+                        "Metadata: topic=${metadata.topic()} (partition=${metadata.partition()}, offset=${metadata.offset()})"
+                }
+                publiserLøsning(behov, "OK")
+            } catch (e: Exception) {
+                sikkerlogg.error(e) { "Kunne ikke overta bekreftelse for ident ${behov.ident}" }
+                publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
+            }
         }
 
-        sikkerlogg.info { "Sendt bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret." }
-        publiserLøsning(behov, "OK")
-    }
+    fun behandle(behov: BekreftelseBehov) =
+        runBlocking {
+            sikkerlogg.info { "Behandler bekreftelsesbehov $behov" }
+            try {
+                val recordKeyResponse = runBlocking { arbeidssøkerConnector.hentRecordKey(behov.ident) }
+                val record =
+                    ProducerRecord(
+                        bekreftelseTopic,
+                        recordKeyResponse.key,
+                        behov.tilBekreftelse(),
+                    )
+                val metadata =
+                    bekreftelseKafkaProdusent
+                        .sendDeferred(record)
+                        .await()
+
+                sikkerlogg.info {
+                    "Sendt bekreftelse for periodeId ${behov.periodeId} til arbeidssøkerregisteret. " +
+                        "Metadata: topic=${metadata.topic()} (partition=${metadata.partition()}, offset=${metadata.offset()})"
+                }
+                publiserLøsning(behov, "OK")
+            } catch (e: Exception) {
+                sikkerlogg.error(e) { "Kunne ikke sende bekreftelse for ident ${behov.ident}" }
+                publiserLøsning(behovmelding = behov, svarPåBehov = null, feil = e)
+            }
+        }
 
     private fun publiserLøsning(
         behovmelding: Behovmelding,
@@ -120,7 +156,7 @@ class BehovløserMediator(
 }
 
 data class OvertaArbeidssøkerBekreftelseMelding(
-    val periodeId: String,
+    val periodeId: UUID,
     val bekreftelsesLøsning: BekreftelsesLøsning = BekreftelsesLøsning.DAGPENGER,
     val start: Start = Start(),
 ) {
@@ -176,3 +212,25 @@ private fun BekreftelseBehov.tilBekreftelsesMelding(): BekreftelseMelding =
     )
 
 fun LocalDateTime.tilMillis(): Long = this.toInstant(ZoneOffset.UTC).toEpochMilli()
+
+private fun OvertaArbeidssøkerBekreftelseMelding.tilPaaVegneAv(): PaaVegneAv =
+    PaaVegneAv(this.periodeId, DAGPENGER, Start(this.start.intervalMS, this.start.graceMS))
+
+private fun BekreftelseBehov.tilBekreftelse(): Bekreftelse =
+    Bekreftelse(
+        UUID.fromString(this.periodeId),
+        Bekreftelsesloesning.DAGPENGER,
+        UUID.randomUUID(),
+        Svar(
+            Metadata(
+                Instant.now(),
+                Bruker(SYSTEM, BekreftelsesLøsning.DAGPENGER.name),
+                BekreftelsesLøsning.DAGPENGER.name,
+                "Bruker sendte inn dagpengermeldekort",
+            ),
+            this.meldeperiode.fraOgMed.toInstant(ZoneOffset.UTC),
+            this.meldeperiode.tilOgMed.toInstant(ZoneOffset.UTC),
+            this.arbeidet,
+            this.arbeidssøkerNestePeriode,
+        ),
+    )
