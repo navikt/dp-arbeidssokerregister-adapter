@@ -13,6 +13,7 @@ import com.natpryce.konfig.overriding
 import com.natpryce.konfig.stringType
 import kotlinx.coroutines.runBlocking
 import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaSchemaRegistryConfig
+import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaServerKonfigurasjon
 import no.nav.dagpenger.oauth2.CachedOauth2Client
 import no.nav.dagpenger.oauth2.OAuth2Config.AzureAd
 
@@ -77,6 +78,16 @@ internal object Configuration {
             password = properties[Key("KAFKA_SCHEMA_REGISTRY_PASSWORD", stringType)],
             autoRegisterSchema = true,
             avroSpecificReaderConfig = true,
+        )
+
+    val kafkaServerKonfigurasjon =
+        KafkaServerKonfigurasjon(
+            applikasjonsId = "${properties[Key("KAFKA_STREAMS_APPLICATION_ID", stringType)]}-v1",
+            autentisering = "SSL",
+            kafkaBrokers = properties[Key("KAFKA_BROKERS", stringType)],
+            keystorePath = properties.getOrNull(Key("KAFKA_KEYSTORE_PATH", stringType)),
+            credstorePassword = properties.getOrNull(Key("KAFKA_CREDSTORE_PASSWORD", stringType)),
+            truststorePath = properties.getOrNull(Key("KAFKA_TRUSTSTORE_PATH", stringType)),
         )
 
     val defaultObjectMapper: ObjectMapper =

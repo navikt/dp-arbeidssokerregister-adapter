@@ -24,10 +24,12 @@ import kotlin.reflect.KClass
 class KafkaFactory(
     private val kafkaConfig: Config,
     private val kafkaSchemaRegistryConfig: KafkaSchemaRegistryConfig,
+    private val kafkaServerConfig: KafkaKonfigurasjon,
 ) {
     val baseProperties =
         Properties().apply {
             putAll(schemaRegistryConfig(kafkaSchemaRegistryConfig))
+            putAll(kafkaServerConfig.properties)
         }
 
     fun createConsumer(topic: String): KafkaKonsument {

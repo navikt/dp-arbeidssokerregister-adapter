@@ -35,6 +35,7 @@ dependencies {
     implementation("io.confluent:kafka-streams-avro-serde:7.8.0")
     // schema("no.nav.paw.arbeidssokerregisteret.api:bekreftelse-paavegneav-schema:beta-v1")
     implementation("org.apache.avro:avro:1.10.2")
+    implementation("org.apache.kafka:kafka-streams:3.8.1")
 
     implementation("no.nav.dagpenger:oauth2-klient:2024.10.31-15.02.1d4f08a38d24")
 

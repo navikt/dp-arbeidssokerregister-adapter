@@ -4,8 +4,10 @@ import com.github.navikt.tbd_libs.kafka.AivenConfig
 import com.github.navikt.tbd_libs.rapids_and_rivers_api.RapidsConnection.StatusListener
 import io.ktor.server.engine.embeddedServer
 import no.nav.dagpenger.arbeidssokerregister.mediator.Configuration.kafkaSchemaRegistryConfig
+import no.nav.dagpenger.arbeidssokerregister.mediator.Configuration.kafkaServerKonfigurasjon
 import no.nav.dagpenger.arbeidssokerregister.mediator.connector.ArbeidssøkerConnector
 import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaFactory
+import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaKonfigurasjon
 import no.nav.dagpenger.arbeidssokerregister.mediator.kafka.KafkaRunner
 import no.nav.dagpenger.arbeidssokerregister.mediator.serializers.BekreftelseAvroSerializer
 import no.nav.dagpenger.arbeidssokerregister.mediator.serializers.PaaVegneAvAvroSerializer
@@ -25,7 +27,8 @@ internal class ApplicationBuilder(
     // Kafka
     private val overtaBekreftelseTopic = configuration.getValue("OVERTA_BEKREFTELSE_TOPIC")
     private val bekreftelseTopic = configuration.getValue("BEKREFTELSE_TOPIC")
-    private val kafkaFactory = KafkaFactory(AivenConfig.default, kafkaSchemaRegistryConfig)
+    private val kafkaKonfigurasjon = KafkaKonfigurasjon(kafkaServerKonfigurasjon, kafkaSchemaRegistryConfig)
+    private val kafkaFactory = KafkaFactory(AivenConfig.default, kafkaSchemaRegistryConfig, kafkaKonfigurasjon)
     private val overtaBekreftelseKafkaProdusent =
         kafkaFactory.createProducer<Long, PaaVegneAv>(
             clientId = "teamdagpenger-arbeidssokerregister-producer",
