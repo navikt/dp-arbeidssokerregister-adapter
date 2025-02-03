@@ -7,5 +7,5 @@ ARBEIDSSOKERREGISTER_RECORD_KEY_HOST: http://paw-kafka-key-generator.paw
   # record-key-arbeidssoekerregisteret.intern.dev.nav.no
 ARBEIDSSOKERREGISTER_RECORD_KEY_SCOPE: api://dev-gcp.paw.paw-kafka-key-generator/.default
 ARBEIDSSOKERPERIODER_TOPIC: paw.arbeidssokerperioder-v1
-OVERTA_BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-paavegneav-beta-v1
-BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-beta-v3
+OVERTA_BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-paavegneav-teamdagpenger-beta-v1
+BEKREFTELSE_TOPIC: paw.arbeidssoker-bekreftelse-teamdagpenger-beta-v1
