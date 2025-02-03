@@ -4,11 +4,8 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClientConfig
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig
 import io.confluent.kafka.serializers.subject.TopicNameStrategy
-import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.common.config.SslConfigs
-import org.apache.kafka.common.serialization.Serdes
-import org.apache.kafka.streams.StreamsConfig
 
 data class KafkaKonfigurasjon(
     val serverKonfigurasjon: KafkaServerKonfigurasjon,
@@ -23,11 +20,7 @@ data class KafkaKonfigurasjon(
 
     private val baseProperties: Map<String, Any?> get() =
         mapOf(
-            StreamsConfig.APPLICATION_ID_CONFIG to serverKonfigurasjon.applikasjonsId,
-            StreamsConfig.BOOTSTRAP_SERVERS_CONFIG to serverKonfigurasjon.kafkaBrokers,
-            StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG to Serdes.Long().javaClass.name,
-            StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG to SpecificAvroSerde::class.java.name,
-            StreamsConfig.PROCESSING_GUARANTEE_CONFIG to StreamsConfig.EXACTLY_ONCE_V2,
+            "bootstrap.servers" to serverKonfigurasjon.kafkaBrokers,
             KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG to schemaRegistryKonfigurasjon.url,
             KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS to schemaRegistryKonfigurasjon.autoRegisterSchema,
             KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to true,
@@ -58,7 +51,6 @@ data class KafkaKonfigurasjon(
 }
 
 data class KafkaServerKonfigurasjon(
-    val applikasjonsId: String,
     val autentisering: String,
     val kafkaBrokers: String,
     val keystorePath: String?,
